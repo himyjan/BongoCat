@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import type { MouseMoveValue } from '@/composables/useDevice'
+
 import { convertFileSrc, invoke } from '@tauri-apps/api/core'
 import { Menu } from '@tauri-apps/api/menu'
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { exists } from '@tauri-apps/plugin-fs'
-import { useDebounceFn, useEventListener } from '@vueuse/core'
+import { useDebounceFn, useEventListener, useRafFn } from '@vueuse/core'
+import { isEqual } from 'es-toolkit'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useDevice } from '@/composables/useDevice'
@@ -44,7 +47,14 @@ useEventListener('resize', () => {
 
 watch(pressedMouses, handleMouseDown)
 
-watch(mousePosition, handleMouseMove)
+useRafFn((() => {
+  const cached: MouseMoveValue = { x: 0, y: 0 }
+  return () => {
+    if (isEqual(cached, mousePosition)) return
+    Object.assign(cached, mousePosition)
+    handleMouseMove(mousePosition)
+  }
+})())
 
 watch(pressedLeftKeys, (keys) => {
   handleKeyDown('left', keys.length > 0)
