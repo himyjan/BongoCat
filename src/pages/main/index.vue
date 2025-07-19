@@ -13,8 +13,9 @@ import { useDevice } from '@/composables/useDevice'
 import { useModel } from '@/composables/useModel'
 import { useSharedMenu } from '@/composables/useSharedMenu'
 import { INVOKE_KEY } from '@/constants'
-import { hideWindow, setAlwaysOnTop, showWindow } from '@/plugins/window'
+import { hideWindow, setAlwaysOnTop, setTaskbarVisibility, showWindow } from '@/plugins/window'
 import { useCatStore } from '@/stores/cat'
+import { useGeneralStore } from '@/stores/general.ts'
 import { useModelStore } from '@/stores/model'
 import { join } from '@/utils/path'
 
@@ -24,6 +25,7 @@ const { handleDestroy, handleResize, handleMouseDown, handleMouseMove, handleKey
 const catStore = useCatStore()
 const { getSharedMenu } = useSharedMenu()
 const modelStore = useModelStore()
+const generalStore = useGeneralStore()
 const resizing = ref(false)
 const backgroundImagePath = ref<string>()
 
@@ -83,6 +85,8 @@ watch(() => modelStore.currentModel, async (model) => {
 
   backgroundImagePath.value = existed ? convertFileSrc(path) : void 0
 }, { deep: true, immediate: true })
+
+watch(() => generalStore.taskbarVisibility, setTaskbarVisibility, { immediate: true })
 
 function handleWindowDrag() {
   appWindow.startDragging()
