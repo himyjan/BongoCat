@@ -450,7 +450,7 @@ dependencies = [
 
 [[package]]
 name = "bongo-cat"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "fs_extra",
  "gilrs",
