@@ -4,6 +4,7 @@ import { InputNumber, Slider, Switch } from 'ant-design-vue'
 import ProList from '@/components/pro-list/index.vue'
 import ProListItem from '@/components/pro-list-item/index.vue'
 import { useCatStore } from '@/stores/cat'
+import { isWindows } from '@/utils/platform'
 
 const catStore = useCatStore()
 </script>
@@ -29,6 +30,18 @@ const catStore = useCatStore()
       :title="$t('pages.preference.cat.labels.mouseMirror')"
     >
       <Switch v-model:checked="catStore.model.mouseMirror" />
+    </ProListItem>
+
+    <ProListItem
+      v-if="isWindows"
+      :description="$t('pages.preference.cat.hints.autoReleaseDelay')"
+      :title="$t('pages.preference.cat.labels.autoReleaseDelay')"
+    >
+      <InputNumber
+        v-model:value="catStore.model.autoReleaseDelay"
+        addon-after="s"
+        class="w-28"
+      />
     </ProListItem>
   </ProList>
 
@@ -74,7 +87,7 @@ const catStore = useCatStore()
     >
       <Slider
         v-model:value="catStore.window.opacity"
-        class="m-0!"
+        class="m-[0]!"
         :max="100"
         :min="10"
         :tip-formatter="(value) => `${value}%`"
