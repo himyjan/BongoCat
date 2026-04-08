@@ -13,8 +13,11 @@ import live2d from '../utils/live2d'
 import { useCatStore } from '@/stores/cat'
 import { useModelStore } from '@/stores/model'
 import { getCursorMonitor } from '@/utils/monitor'
+import { isMac } from '@/utils/platform'
 
 const appWindow = getCurrentWebviewWindow()
+const digitKeys = '1234567890'.split('') as readonly string[]
+const letterKeys = 'QWERTYUIOPASDFGHJKLZXCVBNM'.split('') as readonly string[]
 
 export interface ModelSize {
   width: number
@@ -26,6 +29,42 @@ export function useModel() {
   const catStore = useCatStore()
   const modelSize = ref<ModelSize>()
 
+  function getBehaviorShortcut(index: number) {
+    const primary = isMac ? 'Command' : 'Control'
+
+    const modifierGroups = [
+      [primary],
+      [primary, 'Shift'],
+      [primary, 'Alt'],
+      [primary, 'Shift', 'Alt'],
+    ]
+
+    const tiers = [
+      ...modifierGroups.map(modifiers => ({ modifiers, keys: digitKeys })),
+      ...modifierGroups.map(modifiers => ({ modifiers, keys: letterKeys })),
+    ]
+
+    let nextIndex = index
+
+    for (const tier of tiers) {
+      if (nextIndex < tier.keys.length) {
+        return [...tier.modifiers, tier.keys[nextIndex]].join('+')
+      }
+
+      nextIndex -= tier.keys.length
+    }
+
+    return ''
+  }
+
+  function getMotionShortcutId(modelId: string, groupName: string, index: number) {
+    return `${modelId}:motion:${groupName}:${index}`
+  }
+
+  function getExpressionShortcutId(modelId: string, index: number) {
+    return `${modelId}:expression:${index}`
+  }
+
   async function handleLoad() {
     try {
       if (!modelStore.currentModel) return
@@ -34,13 +73,39 @@ export function useModel() {
 
       await resolveResource(path)
 
-      const { width, height, ...rest } = await live2d.load(path)
+      const { width, height, motions = {}, expressions = [] } = await live2d.load(path)
+
+      const nextMotions = Object.entries(motions)
 
       modelSize.value = { width, height }
+      modelStore.currentMotions = nextMotions
+      modelStore.currentExpressions = expressions
 
       handleResize()
 
-      Object.assign(modelStore, rest)
+      const modelId = modelStore.currentModel.id
+
+      const behaviorIds: string[] = []
+
+      for (const [groupName, items] of nextMotions) {
+        for (const [index] of items.entries()) {
+          behaviorIds.push(getMotionShortcutId(modelId, groupName, index))
+        }
+      }
+
+      for (const [index] of expressions.entries()) {
+        behaviorIds.push(getExpressionShortcutId(modelId, index))
+      }
+
+      for (const [index, id] of behaviorIds.entries()) {
+        if (modelStore.shortcuts[id]) continue
+
+        const shortcut = getBehaviorShortcut(index)
+
+        if (!shortcut) continue
+
+        modelStore.shortcuts[id] = shortcut
+      }
     } catch (error) {
       message.error(String(error))
     }
@@ -79,9 +144,11 @@ export function useModel() {
     if (catStore.model.single) {
       const dirName = nth(path.split(sep()), -2)!
 
-      const filterKeys = Object.entries(modelStore.pressedKeys).filter(([, value]) => {
-        return value.includes(dirName)
-      })
+      const filterKeys = Object.entries(modelStore.pressedKeys).filter(
+        ([, value]) => {
+          return value.includes(dirName)
+        },
+      )
 
       for (const [key] of filterKeys) {
         handleRelease(key)
@@ -117,7 +184,12 @@ export function useModel() {
     const xRatio = (cursorPoint.x - position.x) / size.width
     const yRatio = (cursorPoint.y - position.y) / size.height
 
-    for (const id of ['ParamMouseX', 'ParamMouseY', 'ParamAngleX', 'ParamAngleY']) {
+    for (const id of [
+      'ParamMouseX',
+      'ParamMouseY',
+      'ParamAngleX',
+      'ParamAngleY',
+    ]) {
       const { min, max } = live2d.getParameterRange(id)
 
       if (isNil(min) || isNil(max)) continue
@@ -125,7 +197,7 @@ export function useModel() {
       const isXAxis = id.endsWith('X')
 
       const ratio = isXAxis ? xRatio : yRatio
-      let value = max - (ratio * (max - min))
+      let value = max - ratio * (max - min)
 
       if (isXAxis && catStore.model.mouseMirror) {
         value *= -1

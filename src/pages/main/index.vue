@@ -14,12 +14,15 @@ import { useDevice } from '@/composables/useDevice'
 import { useGamepad } from '@/composables/useGamepad'
 import { useModel } from '@/composables/useModel'
 import { useSharedMenu } from '@/composables/useSharedMenu'
+import { useTauriListen } from '@/composables/useTauriListen'
 import { useWindowPosition } from '@/composables/useWindowPosition'
+import { LISTEN_KEY } from '@/constants'
 import { hideWindow, setAlwaysOnTop, setTaskbarVisibility, showWindow } from '@/plugins/window'
 import { useCatStore } from '@/stores/cat'
 import { useGeneralStore } from '@/stores/general.ts'
 import { useModelStore } from '@/stores/model'
 import { isImage } from '@/utils/is'
+import live2d from '@/utils/live2d'
 import { join } from '@/utils/path'
 import { clearObject } from '@/utils/shared'
 
@@ -120,6 +123,16 @@ watch(() => catStore.window.passThrough, (value) => {
 watch(() => catStore.window.alwaysOnTop, setAlwaysOnTop, { immediate: true })
 
 watch(() => generalStore.app.taskbarVisible, setTaskbarVisibility, { immediate: true })
+
+useTauriListen<{ group: string, index: number }>(LISTEN_KEY.PLAY_MOTION, ({ payload }) => {
+  const { group, index } = payload
+
+  live2d.playMotion(group, index)
+})
+
+useTauriListen<number>(LISTEN_KEY.PLAY_EXPRESSION, ({ payload }) => {
+  live2d.playExpressions(payload)
+})
 
 function handleMouseDown() {
   appWindow.startDragging()
