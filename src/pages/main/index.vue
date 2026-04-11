@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { MotionInfo } from 'easy-live2d'
+
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { PhysicalSize } from '@tauri-apps/api/dpi'
 import { Menu } from '@tauri-apps/api/menu'
@@ -124,14 +126,12 @@ watch(() => catStore.window.alwaysOnTop, setAlwaysOnTop, { immediate: true })
 
 watch(() => generalStore.app.taskbarVisible, setTaskbarVisibility, { immediate: true })
 
-useTauriListen<{ group: string, index: number }>(LISTEN_KEY.PLAY_MOTION, ({ payload }) => {
-  const { group, index } = payload
-
-  live2d.playMotion(group, index)
+useTauriListen<MotionInfo>(LISTEN_KEY.START_MOTION, ({ payload }) => {
+  live2d.startMotion(payload)
 })
 
-useTauriListen<number>(LISTEN_KEY.PLAY_EXPRESSION, ({ payload }) => {
-  live2d.playExpressions(payload)
+useTauriListen<number>(LISTEN_KEY.SET_EXPRESSION, ({ payload }) => {
+  live2d.setExpression(payload)
 })
 
 function handleMouseDown() {

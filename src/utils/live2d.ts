@@ -1,21 +1,20 @@
 import type { ModelSize } from '@/composables/useModel'
-import type { Cubism4InternalModel } from 'pixi-live2d-display'
+import type { MotionInfo } from 'easy-live2d'
 
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { readDir, readTextFile } from '@tauri-apps/plugin-fs'
+import { CubismSetting, Live2DSprite, Priority } from 'easy-live2d'
+import { groupBy } from 'es-toolkit/compat'
 import JSON5 from 'json5'
-import { Cubism4ModelSettings, Live2DModel } from 'pixi-live2d-display'
 import { Application, Ticker } from 'pixi.js'
 
 import { join } from './path'
 
 import { i18n } from '@/locales'
 
-Live2DModel.registerTicker(Ticker)
-
 class Live2d {
   private app: Application | null = null
-  public model: Live2DModel | null = null
+  public model: Live2DSprite | null = null
 
   constructor() { }
 
@@ -24,16 +23,19 @@ class Live2d {
 
     const view = document.getElementById('live2dCanvas') as HTMLCanvasElement
 
-    this.app = new Application({
+    this.app = new Application()
+
+    return this.app.init({
       view,
       resizeTo: window,
       backgroundAlpha: 0,
+      autoDensity: true,
       resolution: devicePixelRatio,
     })
   }
 
   public async load(path: string) {
-    this.initApp()
+    await this.initApp()
 
     this.destroy()
 
@@ -49,21 +51,27 @@ class Live2d {
 
     const modelJSON = JSON5.parse(await readTextFile(modelPath))
 
-    const modelSettings = new Cubism4ModelSettings({
-      ...modelJSON,
-      url: convertFileSrc(modelPath),
+    const modelSetting = new CubismSetting({
+      modelJSON,
     })
 
-    modelSettings.replaceFiles((file) => {
+    modelSetting.redirectPath(({ file }) => {
       return convertFileSrc(join(path, file))
     })
 
-    this.model = await Live2DModel.from(modelSettings)
+    this.model = new Live2DSprite({
+      modelSetting,
+      ticker: Ticker.shared,
+    })
 
     this.app?.stage.addChild(this.model)
 
+    await this.model.ready
+
     const { width, height } = this.model
-    const { motions, expressions } = modelSettings
+
+    const motions = groupBy(this.model.getMotions(), 'group')
+    const expressions = this.model.getExpressions()
 
     return {
       width,
@@ -96,37 +104,23 @@ class Live2d {
     this.model.anchor.set(0.5)
   }
 
-  public playMotion(group: string, index: number) {
-    return this.model?.motion(group, index)
+  public startMotion(motion: MotionInfo) {
+    return this.model?.startMotion({
+      ...motion,
+      priority: Priority.Normal,
+    })
   }
 
-  public playExpressions(index: number) {
-    return this.model?.expression(index)
+  public setExpression(index: number) {
+    return this.model?.setExpression({ index })
   }
 
-  public getCoreModel() {
-    const internalModel = this.model?.internalModel as Cubism4InternalModel
-
-    return internalModel?.coreModel
-  }
-
-  public getParameterRange(id: string) {
-    const coreModel = this.getCoreModel()
-
-    const index = coreModel?.getParameterIndex(id)
-    const min = coreModel?.getParameterMinimumValue(index)
-    const max = coreModel?.getParameterMaximumValue(index)
-
-    return {
-      min,
-      max,
-    }
+  public getParameterValueRange(id: string) {
+    return this.model?.getParameterValueRangeById(id)
   }
 
   public setParameterValue(id: string, value: number | boolean) {
-    const coreModel = this.getCoreModel()
-
-    return coreModel?.setParameterValueById?.(id, Number(value))
+    return this.model?.setParameterValueById(id, Number(value))
   }
 }
 
