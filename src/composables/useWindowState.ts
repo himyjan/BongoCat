@@ -3,10 +3,12 @@ import type { Event } from '@tauri-apps/api/event'
 import { PhysicalPosition, PhysicalSize } from '@tauri-apps/api/dpi'
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { availableMonitors } from '@tauri-apps/api/window'
+import { useDebounceFn } from '@vueuse/core'
 import { isNumber } from 'es-toolkit/compat'
 import { onMounted, ref } from 'vue'
 
 import { useAppStore } from '@/stores/app'
+import { getCursorMonitor } from '@/utils/monitor'
 
 export type WindowState = Record<string, Partial<PhysicalPosition & PhysicalSize> | undefined>
 
@@ -21,7 +23,31 @@ export function useWindowState() {
     appWindow.onMoved(onChange)
 
     appWindow.onResized(onChange)
+
+    appWindow.onScaleChanged(clampToMonitor)
   })
+
+  const clampToMonitor = useDebounceFn(async () => {
+    const monitor = await getCursorMonitor()
+
+    if (!monitor) return
+
+    const { position: monitorPos, size: monitorSize } = monitor
+    const windowSize = await appWindow.outerSize()
+    const windowPos = await appWindow.outerPosition()
+
+    const minX = monitorPos.x
+    const maxX = monitorPos.x + monitorSize.width - windowSize.width
+    const minY = monitorPos.y
+    const maxY = monitorPos.y + monitorSize.height - windowSize.height
+
+    const clampedX = Math.max(minX, Math.min(windowPos.x, maxX))
+    const clampedY = Math.max(minY, Math.min(windowPos.y, maxY))
+
+    if (clampedX === windowPos.x && clampedY === windowPos.y) return
+
+    return appWindow.setPosition(new PhysicalPosition(clampedX, clampedY))
+  }, 500)
 
   const onChange = async (event: Event<PhysicalPosition | PhysicalSize>) => {
     const minimized = await appWindow.isMinimized()
@@ -31,6 +57,8 @@ export function useWindowState() {
     appStore.windowState[label] ??= {}
 
     Object.assign(appStore.windowState[label], event.payload)
+
+    clampToMonitor()
   }
 
   const restoreState = async () => {
@@ -58,6 +86,8 @@ export function useWindowState() {
     }
 
     isRestored.value = true
+
+    clampToMonitor()
   }
 
   return {
