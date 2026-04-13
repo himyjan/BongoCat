@@ -5,9 +5,11 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { availableMonitors } from '@tauri-apps/api/window'
 import { useDebounceFn } from '@vueuse/core'
 import { isNumber } from 'es-toolkit/compat'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 
+import { WINDOW_LABEL } from '@/constants'
 import { useAppStore } from '@/stores/app'
+import { useCatStore } from '@/stores/cat'
 import { getCursorMonitor } from '@/utils/monitor'
 
 export type WindowState = Record<string, Partial<PhysicalPosition & PhysicalSize> | undefined>
@@ -17,6 +19,7 @@ const { label } = appWindow
 
 export function useWindowState() {
   const appStore = useAppStore()
+  const catStore = useCatStore()
   const isRestored = ref(false)
 
   onMounted(() => {
@@ -28,6 +31,8 @@ export function useWindowState() {
   })
 
   const clampToMonitor = useDebounceFn(async () => {
+    if (label !== WINDOW_LABEL.MAIN || !catStore.window.keepInScreen) return
+
     const monitor = await getCursorMonitor()
 
     if (!monitor) return
@@ -48,6 +53,8 @@ export function useWindowState() {
 
     return appWindow.setPosition(new PhysicalPosition(clampedX, clampedY))
   }, 500)
+
+  watch(() => catStore.window.keepInScreen, clampToMonitor)
 
   const onChange = async (event: Event<PhysicalPosition | PhysicalSize>) => {
     const minimized = await appWindow.isMinimized()
