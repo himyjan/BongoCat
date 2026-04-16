@@ -81,6 +81,8 @@ watch(() => modelStore.currentModel, async (model) => {
       modelStore.supportKeys[fileName] = join(groupDir, file.name)
     }
   }
+
+  modelStore.modelReady = true
 }, { deep: true, immediate: true })
 
 watch([() => catStore.window.scale, modelSize], async ([scale, modelSize]) => {
@@ -192,11 +194,11 @@ function handleMouseMove(event: MouseEvent) {
     >
 
     <div
-      v-show="resizing"
+      v-show="resizing || !modelStore.modelReady"
       class="flex items-center justify-center bg-black"
     >
       <span class="text-center text-[10vw] text-white">
-        {{ $t('pages.main.hints.redrawing') }}
+        {{ resizing ? $t('pages.main.hints.redrawing') : $t('pages.main.hints.switching') }}
       </span>
     </div>
   </div>
