@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { confirm } from '@tauri-apps/plugin-dialog'
-import { Space } from 'ant-design-vue'
+import { Space } from 'antdv-next'
 import { checkInputMonitoringPermission, requestInputMonitoringPermission } from 'tauri-plugin-macos-permissions-api'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -58,7 +58,7 @@ onMounted(async () => {
 
       <Space
         v-else
-        class="cursor-pointer text-danger font-bold"
+        class="cursor-pointer text-error font-bold"
         :size="4"
         @click="requestInputMonitoringPermission"
       >

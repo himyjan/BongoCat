@@ -4,7 +4,7 @@ import { appDataDir } from '@tauri-apps/api/path'
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { open } from '@tauri-apps/plugin-dialog'
 import { readDir } from '@tauri-apps/plugin-fs'
-import { message } from 'ant-design-vue'
+import { message } from 'antdv-next'
 import { nanoid } from 'nanoid'
 import { onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -100,7 +100,7 @@ watch(selectPaths, async (paths) => {
 <template>
   <div
     ref="drop"
-    class="w-full flex flex-col cursor-pointer items-center justify-center gap-4 b b-color-1 rounded-lg b-dashed bg-color-8 transition hover:border-primary"
+    class="w-full flex flex-col cursor-pointer items-center justify-center gap-4 b-1 b-dashed bg-[--ant-color-fill-quaternary] transition b-border rounded-lg hover:border-primary"
     :class="{ 'border-primary': dragenter }"
     @click="handleUpload"
   >
