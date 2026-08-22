@@ -1,23 +1,60 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# CMake build trees and generated metadata
+/build*/
+/out/
+/output/
+/CMakeFiles/
+/Testing/
+/CMakeCache.txt
+/cmake_install.cmake
+/CTestTestfile.cmake
+/compile_commands.json
+/build.ninja
+/.ninja_deps
+/.ninja_log
+/Makefile
 
-node_modules
-dist
-dist-ssr
-*.local
-target
+# Compiled native artifacts
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+*.pdb
+*.ilk
+*.exp
+*.dSYM/
 
-# Editor directories and files
-.idea
-.DS_Store
+# Local licensed dependency; install it separately on each machine
+/vendor/CubismSdkForNative/
+
+# IDE and editor-local state
+/.vs/
+/.vscode/
+/.idea/
+*.user
 *.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+*.swp
+*~
+
+# Operating-system metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local logs and temporary files
+*.log
+*.tmp
+*.temp
+
+# Local reference files
+/.reference/
+
+/docs/
+
+# Local Windows audit tools
+/cmake/*.ps1
+!/cmake/RunCubismViewerBlindTest.ps1

@@ -1,163 +1,283 @@
-> [!TIP]
-> 🚧 **项目重构中**：本项目正从 Tauri 迁移至基于 C/C++、SDL3 和 OpenGL 的原生实现。由于项目刚完成维护交接，重构期间暂不受理 Bug 报告及 PR。重要事项请联系[当前维护者](https://github.com/vladelaina)。
->
-> 🚧 **Project Rewrite in Progress:** This project is being migrated from Tauri to a native implementation based on C/C++, SDL3, and OpenGL. As the project has recently undergone a maintainer transition, bug reports and PRs are temporarily not being accepted during the rewrite. For important matters, please contact the [current maintainer](https://github.com/vladelaina).
+# BongoCat
 
+`BongoCat` is a small native desktop overlay for Live2D models. It keeps a
+borderless, transparent window on the desktop and maps keyboard, mouse, and
+gamepad input to the model.
 
-<img width="1306" height="950" alt="tip" src="https://github.com/user-attachments/assets/6dc541f1-75f8-41b3-bd71-ff96806de380" />
+This README is about the source tree and its build. It is not a user manual.
+The Windows build with the Live2D Cubism SDK is the reference build; the public
+CI jobs build and test the same program with a diagnostic renderer because the
+SDK is licensed and is not checked into this repository.
 
+## Current State
 
----
+The native application, bundled model packages, preferences, import path, and
+platform integrations are in this tree. Validation is performed against real
+Windows Cubism builds, with platform- and device-specific checks called out
+when they still need a manual pass.
 
+Without Cubism, CMake selects a diagnostic backend. The application still
+starts, opens its preferences, processes input, and runs the native tests, but
+it cannot draw or animate a real Live2D model. Configure with
+`-DBONGO_CAT_REQUIRE_CUBISM=ON` when a missing SDK should be a configuration error
+instead of a diagnostic build.
 
-![BongoCat](https://socialify.git.ci/ayangweb/BongoCat/image?custom_description=&description=1&font=Source+Code+Pro&forks=1&issues=1&logo=https%3A%2F%2Fgithub.com%2Fayangweb%2FBongoCat%2Fblob%2Fmaster%2Fsrc-tauri%2Fassets%2Flogo-mac.png%3Fraw%3Dtrue&name=1&owner=1&pattern=Floating+Cogs&pulls=1&stargazers=1&theme=Auto)
+## Features
 
-<div align="center">
-  <div>
-    <a href="https://github.com/ayangweb/BongoCat/releases"><img alt="Windows" src="https://img.shields.io/badge/-Windows-blue?style=flat-square&logo=data:image/svg+xml;base64,PHN2ZyB0PSIxNzI2MzA1OTcxMDA2IiBjbGFzcz0iaWNvbiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjE1NDgiIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4Ij48cGF0aCBkPSJNNTI3LjI3NTU1MTYxIDk2Ljk3MTAzMDEzdjM3My45OTIxMDY2N2g0OTQuNTEzNjE5NzVWMTUuMDI2NzU3NTN6TTUyNy4yNzU1NTE2MSA5MjguMzIzNTA4MTVsNDk0LjUxMzYxOTc1IDgwLjUyMDI4MDQ5di00NTUuNjc3NDcxNjFoLTQ5NC41MTM2MTk3NXpNNC42NzA0NTEzNiA0NzAuODMzNjgyOTdINDIyLjY3Njg1OTI1VjExMC41NjM2ODE5N2wtNDE4LjAwNjQwNzg5IDY5LjI1Nzc5NzUzek00LjY3MDQ1MTM2IDg0Ni43Njc1OTcwM0w0MjIuNjc2ODU5MjUgOTE0Ljg2MDMxMDEzVjU1My4xNjYzMTcwM0g0LjY3MDQ1MTM2eiIgcC1pZD0iMTU0OSIgZmlsbD0iI2ZmZmZmZiI+PC9wYXRoPjwvc3ZnPg==" /></a>
-    <a href="https://github.com/ayangweb/BongoCat/releases"><img alt="MacOS" src="https://img.shields.io/badge/-MacOS-black?style=flat-square&logo=apple&logoColor=white" /></a>
-    <a href="https://github.com/ayangweb/BongoCat/releases"><img alt="Linux" src="https://img.shields.io/badge/-Linux-yellow?style=flat-square&logo=linux&logoColor=white" /></a>
-  </div>
+- Standard, keyboard, and gamepad model modes, with three bundled model
+  packages.
+- Cubism `.model3.json` loading, textures, motions, expressions, physics, pose,
+  eye blink, and breath updates.
+- Import and removal of custom model packages. A package is checked for a valid
+  manifest and safe file references before it is installed under the user data
+  directory.
+- Bounded automatic discovery of Bongo-Cat-Mver packages beside the launch
+  location. On Windows, shortcuts use their own folder as that location.
+  Nearby sources and installed packages share one model list; packages may use
+  `config.json` + `img/` directly or an intact nested directory.
+- Mver 0.1.6 is the animation and input behavior baseline; standalone
+  Tauri/Live2D model folders are loaded through a canvas and input adapter.
+  Model containers with nested full packages and image-only variants (for
+  example `A-*` plus `Z-*` directories) are also discovered. The source stays
+  read-only and BongoCat caches only generated adapter files.
+- Keyboard and mouse input, pointer tracking, gamepad buttons and axes,
+  mirroring, lost-release recovery, and configurable shortcuts.
+- Optional keep-on-screen positioning, disabled by default. A fully unreachable
+  window is recovered after a display is disconnected, without polling or
+  interacting with fullscreen applications.
+- Transparent borderless window, click-through, always-on-top, hover hiding,
+  monitor clamping, scaling, opacity, tray integration, and Shift + right-drag
+  resizing.
+- Preferences, light/dark themes, and ten shipped locales: Simplified Chinese,
+  Traditional Chinese, English, French, German, Japanese, Korean, Brazilian
+  Portuguese, Russian, and Spanish.
 
-  <p>
-    <a href="./LICENSE"><img src="https://img.shields.io/github/license/ayangweb/BongoCat?style=flat-square" /></a>
-    <a href="https://github.com/ayangweb/BongoCat/releases/latest"><img src="https://img.shields.io/github/package-json/v/ayangweb/BongoCat?style=flat-square"/></a>
-    <a href="https://github.com/ayangweb/BongoCat/releases"><img src="https://img.shields.io/github/downloads/ayangweb/BongoCat/total?style=flat-square"/></a>
-  </p>
+## How the Runtime Is Split
 
-  <p>
-    <a href="https://trendshift.io/developers/8507" target="_blank"><img src="https://trendshift.io/api/badge/developers/8507" alt="ayangweb | Trendshift" width="250" height="55" /></a>
-    <a href="https://trendshift.io/repositories/14605" target="_blank"><img src="https://trendshift.io/api/badge/repositories/14605" alt="ayangweb%2FBongoCat | Trendshift" width="250" height="55" /></a>
-    <a href="https://hellogithub.com/repository/7d23863fd4be47b39e816193ded385c9" target="_blank">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=7d23863fd4be47b39e816193ded385c9&claim_uid=5ihRVIuTYBmSGtQ&theme=dark" />
-        <source media="(prefers-color-scheme: light)" srcset="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=7d23863fd4be47b39e816193ded385c9&claim_uid=5ihRVIuTYBmSGtQ&theme=neutral" />
-        <img alt="Star History Chart" src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=7d23863fd4be47b39e816193ded385c9&claim_uid=5ihRVIuTYBmSGtQ&theme=neutral" width="250" height="55" />
-      </picture>
-    </a>
-  </p>
-</div>
+The program is intentionally split at the points where the implementation has
+different ownership:
 
-| macOS                                                                                        | Windows                                                                                        | Linux(x11)                                                                                   |
-| -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| ![macOS](https://i0.hdslb.com/bfs/openplatform/dff276b96d49c5d6c431b74b531aab72191b3d87.png) | ![Windows](https://i0.hdslb.com/bfs/openplatform/a4149b753856ee7f401989da902cf3b5ad35b39e.png) | ![Linux](https://i0.hdslb.com/bfs/openplatform/3b49f961819d3ff63b2b80251c1cc13c27e986b0.png) |
+```text
+SDL events and native hooks
+            |
+            v
+     input state (C11 atomics) ---> main-thread application
+                                             |
+                              model parameters and UI state
+                                             |
+                              Cubism update -> OpenGL draw
+```
 
-## 赞助商
+The platform hooks do not touch a model. They publish timestamped events to a
+bounded queue; pointer coordinates are coalesced separately so mouse movement
+does not consume the queue needed for key and button transitions. The main loop
+drains the queue, applies releases and parameters, updates the model, and swaps
+the SDL OpenGL window.
 
-<a href="https://www.toolsetlink.com">
-  <img height="54" alt="UpgradeLink" src="https://github.com/user-attachments/assets/6b84fb0f-3f1d-44b5-9932-2298bc999d8d" />
-</a>
+Frames are submitted when something changed. An idle Cubism model is allowed to
+accumulate a short time slice before it updates, which keeps an idle transparent
+window quiet without making motions depend on a fixed frame rate.
 
-## 开发背景
+The C runtime calls a small interface in `src/live2d`. The Cubism implementation
+is C++17 because that is the SDK's API; the rest of the application remains C11.
+This keeps SDK types out of the public headers and makes the diagnostic backend
+possible.
 
-本项目的灵感来源于 [MMmmmoko](https://github.com/MMmmmoko) 大佬开发的 [Bongo-Cat-Mver](https://github.com/MMmmmoko/Bongo-Cat-Mver)。它以独特的猫咪互动功能深受用户喜爱，但仅支持 Windows 平台。作为一名深度 macOS 用户，我特别希望在自己的设备上也能使用这款可爱的猫咪，于是我决定开发一个适配 macOS 的版本。
+## Source Tree
 
-同时，得益于 [Tauri](https://github.com/tauri-apps/tauri) 强大的跨平台能力，本项目不仅支持 macOS，还兼容 Windows 和 Linux(x11)，让更多的用户都能与这只可爱的猫咪互动！
+```text
+include/bongo_cat/       public C interfaces and data structures
+src/core/                 config, paths, input state, catalogs, hashes
+src/runtime/              runtime orchestration
+  lifecycle/              startup, frame timing, storage, and app state
+  input/                  runtime input mapping and shortcuts
+  model/                  catalog, storage, and import pipelines
+  shell/                  window, tray, and modal-frame behavior
+  diagnostics/            frame and Live2D runtime audits
+src/render/               OpenGL helpers and overlays
+src/live2d/               Cubism bridge and diagnostic backend
+src/platform/             platform adapters grouped by OS
+  windows/                Win32 window, input, capture, tray, and UTF-8 glue
+  macos/                  Cocoa and Application Services glue
+  linux/                  X11 and native menu glue
+src/ui/                   UI implementation grouped by responsibility
+  backend/                Nuklear/SDL backend, input, scale, and cursors
+  rendering/              fonts, paint primitives, and native theme
+  theme/                  Catime theme components and icons
+  preferences/            preference pages, dialogs, model cards, and widgets
+resources/assets/         bundled models, textures, locales, and tray assets
+tests/                    native tests grouped by subsystem, plus fixtures
+cmake/                    dependency, platform, target, and source-policy modules
+```
 
-## 下载
+Internal headers remain private to `src`; only `include/bongo_cat` is a public
+include surface. New implementation files should live beside the subsystem
+that owns them, and CMake source lists should be updated in the matching
+`RuntimeSources.cmake` or target module.
 
-- [夸克网盘](https://pan.quark.cn/s/70f2f2663ce1)
-- [GitHub Releases](https://github.com/ayangweb/BongoCat/releases)
+## Dependencies
 
-不确定下载哪一个？请查阅[下载指南](.github/DOWNLOAD_GUIDE.md)。
+The build uses SDL3 for the window and event loop, desktop OpenGL for drawing,
+yyjson for JSON, stb for image loading, miniaudio for motion audio, and
+Nuklear for the preferences UI. With `BONGO_CAT_FETCH_DEPS=ON` (the default), CMake
+fetches pinned revisions of those open-source dependencies and verifies their
+SHA-256 values. Set it to `OFF` to use installed packages and headers instead.
 
-## 功能介绍
+The Live2D Cubism SDK is a separate download. Put Cubism SDK for Native 5 r.5
+at `vendor/CubismSdkForNative` after accepting Live2D's license. The expected
+tree contains `Core`, `Framework`, and the SDK's OpenGL sample dependencies.
+On Windows, run the SDK helper once:
 
-- 适配 macOS、Windows 和 Linux(x11)。
-- 根据键盘、鼠标或手柄的操作，同步对应的动作。
-- 支持导入自定义模型，自由打造专属猫咪形象。
-- 完全开源，代码公开透明，绝不收集任何用户数据。
-- 支持离线运行，无需联网，保护用户隐私。
+```powershell
+cd vendor\CubismSdkForNative\Samples\OpenGL\thirdParty\scripts
+.\setup_glew_glfw.bat
+```
 
-## 模型转换
+The SDK is ignored by Git and is never fetched by this project.
 
-如果你想将 Bongo-Cat-Mver 应用中的模型转换为兼容 BongoCat 的格式，可以使用以下工具：
+## Building
 
-🔗 [在线转换](https://bongocat.vteamer.cc)
+### Windows with Cubism
 
-## 更多模型
+Use Visual Studio 2022 or the matching Build Tools (v143, Windows 10/11 SDK):
 
-你可以在这个仓库中探索、下载更多猫咪模型，或提交你的创作，与大家一起分享：
+```bat
+build.bat Release
+```
 
-📦 [Awesome-BongoCat](https://github.com/ayangweb/Awesome-BongoCat)
+The repository build script displays a live `#F77DAA` progress bar, keeps
+configuration and build logs under `build-cubism/`, and uses two parallel jobs
+by default. Set `BONGOCAT_BUILD_JOBS` to change the job count or set
+`BONGOCAT_CLEAN_BUILD=1` to request a clean build. The Cubism SDK is used
+automatically when it is present; set `BONGOCAT_REQUIRE_CUBISM=1` to fail
+instead of using the diagnostic backend when it is missing. The equivalent
+manual commands are:
 
-## 社区交流
+```powershell
+cmake -S . -B build-cubism -G "Visual Studio 17 2022" -A x64 `
+  -DBONGO_CAT_REQUIRE_CUBISM=ON `
+  -DBONGO_CAT_WARNINGS_AS_ERRORS=ON
+cmake --build build-cubism --config Release --parallel 2
+ctest --test-dir build-cubism -C Release --output-on-failure
+```
 
-<table>
-  <thead>
-    <tr>
-      <th>QQ 群 1</th>
-      <th>QQ 群 2</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>
-        <a href="https://qm.qq.com/q/AS3gNv2Vzy">
-          <picture>
-            <source
-              media="(prefers-color-scheme: dark)"
-              srcset="https://i0.hdslb.com/bfs/openplatform/8ecdc4982ab01b59d7731fcca3ec26631a274560.png"
-            />
-            <source
-              media="(prefers-color-scheme: light)"
-              srcset="https://i0.hdslb.com/bfs/openplatform/09f56580397063e1819c4c2ed63d07dee12720e1.png"
-            />
-            <img
-              alt="QQ Group 1"
-              src="https://i0.hdslb.com/bfs/openplatform/09f56580397063e1819c4c2ed63d07dee12720e1.png"
-              height="250"
-            />
-          </picture>
-        </a>
-      </td>
-      <td>
-        <a href="https://qm.qq.com/q/TmltLAod2O">
-          <picture>
-            <source
-              media="(prefers-color-scheme: dark)"
-              srcset="https://i0.hdslb.com/bfs/openplatform/473c522487ff33e0f32b15466aeb0734f17161c8.png"
-            />
-            <source
-              media="(prefers-color-scheme: light)"
-              srcset="https://i0.hdslb.com/bfs/openplatform/d5ae8c5af6ae1d0a1f066705ee822d1287384cf6.png"
-            />
-            <img
-              alt="QQ Group 2"
-              src="https://i0.hdslb.com/bfs/openplatform/d5ae8c5af6ae1d0a1f066705ee822d1287384cf6.png"
-              height="250"
-            />
-          </picture>
-        </a>
-      </td>
-    </tr>
-  </tbody>
-</table>
+The executable is `build-cubism/Release/BongoCat.exe`.
 
-## 赞赏
+Build the versioned portable release archive and SHA-256 file with:
 
-每一份认可都值得被珍视！赞赏随缘，心意无价，谢谢你的支持 ❤️
+```powershell
+cmake --build build-cubism --config Release --target package
+```
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://i0.hdslb.com/bfs/openplatform/e7438bff14cdfb6bfd0feacbb482f99ea4093294.png" />
-  <source media="(prefers-color-scheme: light)" srcset="https://i0.hdslb.com/bfs/openplatform/da55cc3ec1556580c91e59f589792866c998c7c6.png" />
-  <img alt="微信赞赏码" src="https://i0.hdslb.com/bfs/openplatform/da55cc3ec1556580c91e59f589792866c998c7c6.png" height="250" />
-</picture>
+On Windows, build the graphical installer and its SHA-256 file with NSIS 3.03
+or newer available on `PATH`:
 
-## 贡献指南
+```powershell
+cmake --build build-cubism --config Release --target package-installer
+```
 
-感谢大家为 BongoCat 做出的宝贵贡献！如果你也希望为 BongoCat 做出贡献，请查阅[贡献指南](.github/CONTRIBUTING.md)。
+The installer is current-user-only: it requests no administrator elevation and
+defaults to `%LOCALAPPDATA%\Programs\BongoCat`. Its shortcuts and uninstall
+entry are also created for the current Windows user.
 
-<a href="https://openomy.com/ayangweb/BongoCat" target="_blank" style="display: block; width: 100%;" align="center">
-  <img src="https://openomy.com/svg?repo=ayangweb/BongoCat&chart=bubble" alt="Contribution Leaderboard" style="display: block; width: 100%;" />
-</a>
+Release files are written to `build-cubism/dist`. Portable archives use the
+conventional product-version-platform-architecture format, and installers add
+the `-setup` suffix. The installer registers BongoCat in Windows Apps &
+features, adds Start Menu entries, offers a desktop shortcut, and includes an
+uninstaller. The installed executable keeps the stable `BongoCat.exe` name so
+upgrades do not break shortcuts.
 
-## 历史星标
+### Diagnostic or Unix build
 
-<a href="https://www.star-history.com/#ayangweb/BongoCat&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=ayangweb/BongoCat&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=ayangweb/BongoCat&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=ayangweb/BongoCat&type=Date" />
- </picture>
-</a>
+```powershell
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+The native Linux branch requires the usual OpenGL and X11/XInput2/Xfixes
+development packages. macOS uses its Cocoa and ApplicationServices frameworks.
+
+To use system dependencies rather than CMake's pinned downloads:
+
+```powershell
+cmake -S . -B build -G Ninja -DBONGO_CAT_FETCH_DEPS=OFF
+```
+
+When fetching is disabled, CMake needs SDL3-static and yyjson package
+configurations plus `stb_image.h`, `stb_image_write.h`, `miniaudio.h`, and
+`nuklear.h`. Their include roots can be set with
+`BONGO_CAT_STB_INCLUDE_DIR`, `BONGO_CAT_MINIAUDIO_INCLUDE_DIR`, and
+`BONGO_CAT_NUKLEAR_INCLUDE_DIR`.
+
+### Install tree
+
+```powershell
+cmake --install build --config Release --component Runtime --prefix out
+```
+
+The install tree is portable. Windows embeds the resource archive; Unix builds
+place `assets/` beside the executable or application bundle. User-owned files
+follow the per-user storage layout managed by the application. The portable
+executable and installed application use the same per-user storage layout on
+each platform; no files are written next to the executable. This pre-release
+build does not migrate settings from an older directory. Settings and session
+state use separate schema-1 documents. Unsupported formats are rejected.
+
+## Runtime Data and Test Switches
+
+Storage is separated into `config`, `data`, `cache`, `state`, and `logs`.
+Installed packages live under `data/models`; generated nearby-model adapters
+live under `cache/model-adapters`. A Tauri or Bongo-Cat-Mver package can be used
+without installing it by placing its model directory beside `BongoCat` or its
+Windows shortcut. Startup discovery scans at most three directory levels and
+256 directories, with a 500 ms directory-work budget. Unchanged
+sources reuse their cached identity and generated adapter.
+A collection such as `露西亚-誓焰版` may be selected as one folder; its full
+package and nested image patches are discovered together.
+Tests and isolated launches may override the complete storage layout:
+
+```text
+BongoCat --storage-root=C:\path\to\isolated-storage
+BongoCat --nearby-root=C:\path\to\model-collection
+```
+
+Arguments beginning with `--ci-` are test instrumentation. They select a model,
+preference page, language, theme, frame audit, or input audit; they are not a
+stable end-user command-line interface.
+
+## Tests
+
+The CTest suite covers strict settings/session validation, model discovery,
+input ordering and recovery, shortcuts, localization, UI helpers, application
+state, and SHA-256 resource validation. Only current schemas are accepted.
+
+```powershell
+ctest --test-dir build --output-on-failure
+cmake --build build --target check-lines
+```
+
+`check-lines` enforces a default maximum of 300 physical lines for native C,
+C++, Objective-C, header, CMake module, and native test files. A small set of
+mechanically dense files has reviewed, explicit limits in the policy. The rule
+is a review aid, not a claim that shorter files are automatically better.
+
+## Continuous Integration
+
+GitHub Actions runs Cppcheck, the source-size check, a warning-clean Linux build,
+CTest, and a Windows/Linux/macOS build matrix on pushes, pull requests, tags,
+and manual runs. Each matrix job uploads its diagnostic portable release and
+SHA-256 file as a separate artifact; Windows uploads the current-user-only NSIS
+installer and its checksum as a second artifact. This keeps the portable package
+and installer independently downloadable from the workflow run. The packages
+are ZIP on Windows and macOS, and TGZ on Linux. A licensed Cubism SDK is not
+provisioned on the runners, so these CI packages use the diagnostic backend.
+Artifacts are named `portable-*` and, on Windows, `installer-*`.
+
+## Third-Party and Distribution Notes
+
+Third-party components retain their upstream licenses. Cubism SDK files must be
+obtained from Live2D and are not redistributed here. Before distributing a
+binary, review the licenses for SDL3, yyjson, stb, miniaudio, Nuklear, OpenGL,
+and the selected platform SDK together with the project's own distribution
+terms.
