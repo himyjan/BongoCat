@@ -59,6 +59,61 @@ In 2023, Bongo Cat's cover of "What Was I Made For?" by Billie Eilish was shared
 
 > The current native version is built on C/C++, SDL3, and OpenGL. The diagram below may look a little complicated, but it’s actually not difficult to understand.
 
+### Runtime ownership and frame scheduling
+
+The native runtime is intentionally split at ownership boundaries:
+
+```text
+Platform input listeners
+(keyboard / pointer)
+            |
+            v
+  C11 input state
+  (atomic edge queue + coalesced pointer path)
+            |
+            v
+     main-thread application <----- SDL3 events
+            |
+            v
+  model parameters, overlay, and UI state
+            |
+            v
+  Cubism update -> OpenGL composition -> platform presentation
+```
+
+Platform input listeners never manipulate a model directly. Windows low-level
+hooks, the macOS Quartz event tap, and Linux XInput2 publish timestamped
+keyboard and mouse-button transitions to application-owned input state. On
+Windows, DirectInput is sampled through the platform pointer interface when an
+imported model requests relative movement; SDL3 gamepad events are normalized
+on the main thread. Pointer coordinates use a separate atomic coalescing path,
+so high-frequency motion does not displace the bounded queue used for key and
+button edges.
+
+Each loop iteration waits for SDL or native wakeups, the next scheduler
+deadline, or pending UI/window work. It then drains queued events and release
+recovery, applies input-derived parameters and overlay state, and advances the
+model with elapsed time. In the normal pet-window path, a frame is presented
+when the application is marked dirty; explicit preview, resize, and capture
+operations may request additional renders. Presentation is platform-specific:
+`SDL_GL_SwapWindow` is used on macOS and Linux, and on Windows when layered
+presentation is inactive; active Windows layered presentation uses
+`UpdateLayeredWindow`.
+
+The scheduler does not require a fixed simulation step. With Cubism enabled,
+the next model update is derived from the configured maximum FPS (defaulting to
+60 FPS), and the runtime receives the elapsed time since the previous update.
+Elapsed gaps are capped at 250 ms and subdivided into at most eight substeps
+for stability. If an update produces no visual change, the normal pet window
+is not presented again unless another state transition requests a render.
+
+The C runtime calls the C ABI declared in `include/bongo_cat/model.h`, whose
+bridge and model implementation live in `src/live2d`. When the Cubism SDK is
+enabled, that implementation is C++17 because the SDK exposes a C++ API; the
+rest of the native C sources use C11. Cubism SDK types stay behind opaque C
+handles and C-compatible structures, while `src/live2d/live2d_stub.c` provides
+the diagnostic backend when the SDK is unavailable.
+
 
 ```mermaid
 %%{init: {"flowchart": {"curve": "catmullRom", "htmlLabels": true, "nodeSpacing": 24, "rankSpacing": 38}}}%%
@@ -249,8 +304,6 @@ flowchart TB
   style Dependencies fill:#fafafa,stroke:#a1a1aa,stroke-width:1px
   style Toolchain fill:#fffaf3,stroke:#dda866,stroke-width:1.5px
 ```
-
-### So why did you choose to use C/C++ for the rewrite instead of using one of the more modern frameworks?
 
 
 ## Build
