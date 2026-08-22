@@ -51,7 +51,7 @@
 
 本项目的灵感来源于 [MMmmmoko](https://github.com/MMmmmoko) 大佬开发的 [Bongo-Cat-Mver](https://github.com/MMmmmoko/Bongo-Cat-Mver)。它以独特的猫咪互动功能深受用户喜爱，但仅支持 Windows 平台。作为一名深度 macOS 用户，我特别希望在自己的设备上也能使用这款可爱的猫咪，于是我决定开发一个适配 macOS 的版本。
 
-同时，得益于 [Tauri](https://github.com/tauri-apps/tauri) 强大的跨平台能力，本项目不仅支持 macOS，还兼容 Windows 和 Linux(x11)，让更多的用户都能与这只可爱的猫咪互动！
+当前原生版本基于 C/C++、SDL3 和 OpenGL 构建，支持 macOS、Windows 和 Linux(x11)，让更多用户都能与这只可爱的猫咪互动！
 
 ## 技术架构
 
@@ -59,7 +59,7 @@
 %%{init: {"flowchart": {"curve": "catmullRom", "htmlLabels": true, "nodeSpacing": 24, "rankSpacing": 38}}}%%
 flowchart TB
   User(["用户输入<br/>Keyboard · Mouse · Gamepad"])
-  ModelSources(["模型来源<br/>Builtin · Tauri · Mver · Nearby"])
+  ModelSources(["模型来源<br/>Builtin · Mver · Custom · Nearby"])
   Desktop(["桌面输出<br/>透明宠物窗口 · 偏好设置"])
 
   subgraph Platform["平台后端"]
@@ -99,7 +99,7 @@ flowchart TB
 
     subgraph ModelPipeline["模型发现、适配与存储"]
       direction LR
-      Discover["发现与格式识别<br/>builtin · Tauri · Mver · patch"]
+      Discover["发现与格式识别<br/>builtin · Mver · custom · patch"]
       Validate["安全校验与身份计算<br/>manifest · path · digest · metadata"]
       Adapt["运行时适配器生成<br/>package · input assets · projection"]
       Store[("按用户隔离的存储<br/>data/models · cache/adapters")]
