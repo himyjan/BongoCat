@@ -45,6 +45,7 @@ if(EXISTS "${CUBISM_CORE_HEADER}")
     set(BONGO_CAT_LIVE2D_SOURCES
       src/live2d/cubism_bridge.cpp src/live2d/cubism_expression.cpp
       src/live2d/cubism_model_load.cpp
+      src/live2d/cubism_motion_preview.cpp
       src/live2d/cubism_model_update.cpp
       src/live2d/cubism_parameter_overrides.cpp
       src/live2d/cubism_motion_playback.cpp

@@ -1,8 +1,8 @@
 #include "runtime.h"
 #include "model_import.h"
+#include "model_load_progress.h"
 #include "bongo_cat/audio.h"
 #include "bongo_cat/overlay.h"
-#include "bongo_cat/preferences.h"
 
 #include <SDL3/SDL.h>
 #include <stdio.h>
@@ -16,29 +16,6 @@ static void select_model_state(BongoCatApp *app, const BongoCatModelEntry *entry
         entry->id);
     app->loaded_mode = entry->mode;
     bongo_cat_gamepads_set_enabled(app, entry->mode == BONGO_CAT_MODE_GAMEPAD);
-}
-static void request_model_frame(BongoCatApp *app, bool reveal) {
-    if (!app) return;
-    if (app->window) {
-        SDL_WindowFlags flags = SDL_GetWindowFlags(app->window);
-        bool hidden = (flags & (SDL_WINDOW_HIDDEN | SDL_WINDOW_MINIMIZED)) != 0;
-        if (reveal && (!app->session.window.visible || hidden ||
-            app->hover_hidden))
-            bongo_cat_window_set_visible(app, true);
-        else if (app->session.window.visible)
-            bongo_cat_window_clamp_to_display(app);
-    }
-    bongo_cat_window_mark_hit_dirty(app);
-    app->dirty = true;
-}
-
-static void model_runtime_stage(BongoCatApp *app, const char *stage,
-    const BongoCatModelEntry *entry) {
-    char state[BONGO_CAT_ID_CAP + 32];
-    const char *id = entry ? entry->id : "unknown";
-    snprintf(state, sizeof(state), "model-load:%s:%s", stage, id);
-    bongo_cat_runtime_stage(app, state);
-    SDL_Log("[runtime] Model load %s: id=%s", stage, id);
 }
 
 static bool behavior_cacheable(const BongoCatModelEntry *entry) {
@@ -75,44 +52,6 @@ static void behavior_cache_store(BongoCatApp *app,
     snprintf(app->behavior_cache_digest, sizeof(app->behavior_cache_digest),
         "%s", entry->content_digest);
     app->behavior_cache_valid = true;
-}
-
-static void model_progress_runtime_stage(BongoCatApp *app, float progress) {
-    static const char *names[] = {"", "model-core", "texture-loading",
-        "finalizing"};
-    unsigned stage = progress >= .95f ? 3 : progress >= .50f ? 2 : 1;
-    if (!app || stage == app->model_load_runtime_stage) return;
-    app->model_load_runtime_stage = stage;
-    char state[BONGO_CAT_ID_CAP + 40];
-    snprintf(state, sizeof(state), "model-load:%s:%s", names[stage],
-        app->loading_model[0] ? app->loading_model : "unknown");
-    bongo_cat_runtime_stage(app, state);
-}
-
-static void model_load_progress(void *userdata, float progress) {
-    BongoCatApp *app = userdata;
-    model_progress_runtime_stage(app, progress);
-    /* Keep native window procedures responsive while the main loop is
-       synchronously loading Cubism and OpenGL resources. */
-    SDL_PumpEvents();
-    if (app && app->preferences)
-        bongo_cat_preferences_model_load_progress(app->preferences, progress);
-    /* The main loop is blocked during loading, so advance the visible model here. */
-    if (!app || !app->loaded_model[0] || !app->model_load_last_frame_ns ||
-        !app->live2d)
-        return;
-    uint64_t now = SDL_GetTicksNS();
-    if (progress < .98f && now - app->model_load_last_frame_ns < 16000000ull)
-        return;
-    uint64_t previous = app->model_load_last_frame_ns;
-    app->model_load_last_frame_ns = now;
-    float elapsed = (float)((now - previous) / 1000000000.0);
-    bongo_cat_app_drain_input(app, false);
-    bongo_cat_app_update_hover(app, now);
-    if (!app->smoke_freeze_model && elapsed > 0.0f)
-        bongo_cat_app_step_live2d(app, elapsed);
-    app->last_frame_ns = now;
-    bongo_cat_app_render_now(app);
 }
 
 typedef struct ModelContentAnchor {
@@ -198,7 +137,7 @@ static void commit_model(BongoCatApp *app,
     if (!changed && !force_refresh) return;
     select_model_state(app, entry);
     app->model_selection_serial++;
-    request_model_frame(app, reveal);
+    bongo_cat_model_request_frame(app, reveal);
 }
 
 bool bongo_cat_app_select_model_with_error(BongoCatApp *app,
@@ -263,11 +202,11 @@ bool bongo_cat_app_select_model_with_error(BongoCatApp *app,
     bongo_cat_live2d_reshape(app->live2d, pixel_width, pixel_height);
     snprintf(app->loading_model, sizeof(app->loading_model), "%s", entry->id);
     app->model_load_runtime_stage = 0;
-    model_runtime_stage(app, "started", entry);
+    bongo_cat_model_runtime_stage(app, "started", entry);
     app->model_load_last_frame_ns = replacing_model ? SDL_GetTicksNS() : 0;
     BongoCatResult load_result = bongo_cat_live2d_load(app->live2d, entry->directory,
         entry->setting_file, entry->preset, &render_options,
-        model_load_progress, app, failure);
+        bongo_cat_model_load_progress, app, failure);
     app->model_load_last_frame_ns = 0;
     if (replacing_model) app->last_frame_ns = SDL_GetTicksNS();
     if (load_result != BONGO_CAT_OK) {
@@ -279,13 +218,13 @@ bool bongo_cat_app_select_model_with_error(BongoCatApp *app,
                 "Cannot restore the previous OpenGL context: %s", SDL_GetError());
         free(behaviors);
         if (!bongo_cat_live2d_ready(app->live2d)) app->loaded_model[0] = '\0';
-        request_model_frame(app, false);
+        bongo_cat_model_request_frame(app, false);
         app->loading_model[0] = '\0';
         app->model_load_runtime_stage = 0;
         bongo_cat_runtime_stage(app, "running");
         return false;
     }
-    model_runtime_stage(app, "committing", entry);
+    bongo_cat_model_runtime_stage(app, "committing", entry);
     BongoCatParameterRange pointer_x, pointer_y;
     bool model_pointer =
         bongo_cat_live2d_parameter(app->live2d, "ParamMouseX", &pointer_x) &&
@@ -334,7 +273,7 @@ bool bongo_cat_app_select_model_with_error(BongoCatApp *app,
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
             "Cannot restore the previous OpenGL context: %s", SDL_GetError());
     bongo_cat_memory_policy_model_loaded();
-    model_runtime_stage(app, "completed", entry);
+    bongo_cat_model_runtime_stage(app, "completed", entry);
     app->loading_model[0] = '\0';
     app->model_load_runtime_stage = 0;
     bongo_cat_runtime_stage(app, "running");

@@ -31,6 +31,7 @@ set(BONGO_CAT_RENDER_SOURCES
 set(BONGO_CAT_RUNTIME_LIFECYCLE_SOURCES
   src/runtime/lifecycle/app.c
   src/runtime/lifecycle/app_entry.c
+  src/runtime/lifecycle/app_loop.c
   src/runtime/lifecycle/assets.c
   src/runtime/lifecycle/config_store.c
   src/runtime/lifecycle/frame_clock.c
@@ -61,6 +62,7 @@ set(BONGO_CAT_RUNTIME_MODEL_SOURCES
   src/runtime/model/model_catalog_runtime.c
   src/runtime/model/model_catalog_refresh.c
   src/runtime/model/model_files.c
+  src/runtime/model/model_load_progress.c
   src/runtime/model/multi_pet.c
   src/runtime/model/multi_pet_process.c
   src/runtime/model/multi_pet_settings.c

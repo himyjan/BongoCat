@@ -46,8 +46,6 @@ foreach(FILE IN LISTS FILES)
   elseif(RELATIVE_FILE STREQUAL
       "src/ui/preferences/preferences_about.c")
     set(LIMIT 301)
-  elseif(RELATIVE_FILE STREQUAL "tests/core/test_config.c")
-    set(LIMIT 309)
   endif()
 
   if(COUNT GREATER LIMIT)
