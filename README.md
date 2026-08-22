@@ -39,21 +39,26 @@
 | ![macOS](https://i0.hdslb.com/bfs/openplatform/dff276b96d49c5d6c431b74b531aab72191b3d87.png) | ![Windows](https://i0.hdslb.com/bfs/openplatform/a4149b753856ee7f401989da902cf3b5ad35b39e.png) | ![Linux](https://i0.hdslb.com/bfs/openplatform/3b49f961819d3ff63b2b80251c1cc13c27e986b0.png) |
 
 
+## Bongo Cat History
+
+The original Bongo Cat GIF originated on May 7, 2018, when an animated cat GIF made by Twitter user @StrayRogue was edited by @DitzyFlama, with the edit including bongos which were hit by the cat to the tune of "Athletic" from the Super Mario World soundtrack. The original artist clarified that Bongo Cat was a cat-like blob rather than an actual cat, showing a drawing of the character's full body in another tweet.
+
+It has later been edited to many other songs and many different instruments in fan-made videos, appearing on social media such as YouTube and Twitter. The meme has covered many songs from video game soundtracks, such as music from Persona 5 and Super Mario, as well as mainstream songs such as Toto's "Africa" and Darude's "Sandstorm". After an increase in popularity, Stray Rogue began making and selling Bongo Cat merchandise. Bongo Cat also has been made into an interactive website.
+
+The meme was also developed into key-mapping software in 2018. The program originated from open-source code written by Hamish Duncanson on GitHub, and was later modified by contributors such as MMmmmoko, ayangweb, and kuroni.
+
+In 2023, Bongo Cat's cover of "What Was I Made For?" by Billie Eilish was shared online. The cover went viral on TikTok and fans sang this version during Eilish's concerts in 2024. By 2025, Filipino congressman Francisco "Kiko" Barzaga, representative of Dasmariñas City, made the Bongo Cat cover a part of his public persona, branding himself "Congressmeow" and singing the lyrics "meow meow meow meow" on social media.
+
+
+
 ## Project Status
 
-## 赞助商
 
-<a href="https://www.toolsetlink.com">
-  <img height="54" alt="UpgradeLink" src="https://github.com/user-attachments/assets/6b84fb0f-3f1d-44b5-9932-2298bc999d8d" />
-</a>
 
-## 开发背景
+## Technical Architecture
 
-本项目的灵感来源于 [MMmmmoko](https://github.com/MMmmmoko) 大佬开发的 [Bongo-Cat-Mver](https://github.com/MMmmmoko/Bongo-Cat-Mver)。它以独特的猫咪互动功能深受用户喜爱，但仅支持 Windows 平台。作为一名深度 macOS 用户，我特别希望在自己的设备上也能使用这款可爱的猫咪，于是我决定开发一个适配 macOS 的版本。
+> The current native version is built on C/C++, SDL3, and OpenGL. The diagram below may look a little complicated, but it’s actually not difficult to understand.
 
-当前原生版本基于 C/C++、SDL3 和 OpenGL 构建，支持 macOS、Windows 和 Linux(x11)，让更多用户都能与这只可爱的猫咪互动！
-
-## 技术架构
 
 ```mermaid
 %%{init: {"flowchart": {"curve": "catmullRom", "htmlLabels": true, "nodeSpacing": 24, "rankSpacing": 38}}}%%
@@ -245,6 +250,17 @@ flowchart TB
   style Toolchain fill:#fffaf3,stroke:#dda866,stroke-width:1.5px
 ```
 
+### So why did you choose to use C/C++ for the rewrite instead of using one of the more modern frameworks?
+
+
+## Build
+
+## 赞助商
+
+<a href="https://www.toolsetlink.com">
+  <img height="54" alt="UpgradeLink" src="https://github.com/user-attachments/assets/6b84fb0f-3f1d-44b5-9932-2298bc999d8d" />
+</a>
+
 ## 下载
 
 - [夸克网盘](https://pan.quark.cn/s/70f2f2663ce1)
@@ -328,8 +344,8 @@ flowchart TB
 
 ## Special Thanks❤️
 
-<a href="https://github.com/BongoCatPet/BongoCat/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=BongoCatPet/BongoCat" />
+<a href="https://openomy.com/ayangweb/BongoCat" target="_blank" style="display: block; width: 100%;" align="center">
+  <img src="https://openomy.com/svg?repo=ayangweb/BongoCat&chart=bubble" alt="Contribution Leaderboard" style="display: block; width: 100%;" />
 </a>
 
 
