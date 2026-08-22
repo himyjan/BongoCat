@@ -58,69 +58,80 @@
 ```mermaid
 %%{init: {"flowchart": {"curve": "catmullRom", "htmlLabels": true, "nodeSpacing": 24, "rankSpacing": 38}}}%%
 flowchart TB
-  User(["用户输入<br/>Keyboard · Mouse · Gamepad"])
-  ModelSources(["模型来源<br/>Builtin · Mver · Custom · Nearby"])
-  Desktop(["桌面输出<br/>透明宠物窗口 · 偏好设置"])
+  User(["User Input<br/>Keyboard / Mouse / Gamepad"])
+  ModelSources(["External Model Sources<br/>Standalone .model3.json / Mver package / Mver image patch"])
+  Desktop(["Desktop Output<br/>Transparent pet window / Preferences window"])
 
-  subgraph Platform["平台后端"]
+  subgraph Platform["Platform Backends"]
     direction LR
-    Win["Windows<br/>Win32 · Layered Window · Capture"]
-    Mac["macOS<br/>Cocoa · ApplicationServices"]
-    Linux["Linux<br/>X11 · XInput2 · XFixes"]
+    Win["Windows<br/>Win32 hooks / DirectInput / layered-window support"]
+    Mac["macOS<br/>Cocoa / ApplicationServices / Quartz event tap"]
+    Linux["Linux<br/>X11 / XInput2 / XFixes"]
   end
 
   subgraph Native["BongoCat Native Runtime"]
     direction TB
 
-    subgraph Orchestration["运行时编排 · C11"]
+    subgraph Orchestration["Runtime Orchestration / C11"]
       direction LR
-      Entry["程序入口<br/>src/main.c"]
-      Lifecycle["生命周期<br/>startup · storage · config · shutdown"]
-      EventLoop["SDL3 事件 / 帧调度器<br/>wait → drain → update → render"]
-      AppState[("BongoCatApp<br/>settings · session · catalogs · runtime state")]
+      Entry["Process Entry<br/>src/main.c calls bongo_cat_app_run"]
+      Lifecycle["Application Lifecycle<br/>startup / storage paths / configuration / shutdown"]
+      EventLoop["SDL3 Event and Frame Loop<br/>wait / dispatch / drain input / update / render"]
+      AppState[("BongoCatApp State<br/>settings / session / catalogs / platform and runtime state")]
 
       Entry --> Lifecycle --> EventLoop
       Lifecycle <--> AppState
       EventLoop <--> AppState
     end
 
-    subgraph InputShell["输入与桌面外壳"]
+    subgraph InputShell["Input and Desktop Shell"]
       direction LR
-      NativeHooks["原生输入钩子<br/>keyboard · mouse · gamepad"]
-      InputQueue[("原子输入队列<br/>timestamp · ordering · recovery")]
-      InputMap["输入映射<br/>shortcuts · mouse · gamepad"]
-      Shell["窗口 / 托盘 / 菜单<br/>drag · scale · click-through · multi-pet"]
+      GlobalInput["Global Keyboard and Pointer Capture<br/>Win32 hooks / Quartz event tap / XInput2"]
+      InputQueue[("Atomic Input State<br/>ordered edge queue / release-edge recovery / coalesced pointer position")]
+      Gamepad["SDL3 Gamepad Events<br/>active-device selection / buttons / axes"]
+      InputMap["Input Dispatch<br/>shortcuts / model parameters / pointer mapping"]
+      Shell["Desktop Shell<br/>window / tray / context menu / drag and resize / click-through / multi-pet coordination"]
 
-      NativeHooks --> InputQueue --> InputMap
-      Shell --> EventLoop
+      GlobalInput --> InputQueue --> InputMap
+      Gamepad --> InputMap
+      EventLoop --> Shell
       EventLoop --> InputMap
       InputMap --> AppState
+      Shell --> AppState
     end
 
-    subgraph ModelPipeline["模型发现、适配与存储"]
+    subgraph ModelPipeline["Model Discovery, Adaptation, and Cataloging"]
       direction LR
-      Discover["发现与格式识别<br/>builtin · Mver · custom · patch"]
-      Validate["安全校验与身份计算<br/>manifest · path · digest · metadata"]
-      Adapt["运行时适配器生成<br/>package · input assets · projection"]
-      Store[("按用户隔离的存储<br/>data/models · cache/adapters")]
-      Catalog["模型 / 行为目录<br/>refresh · motions · expressions · effects"]
+      BuiltIn["Built-in Models<br/>resources/assets/models"]
+      Discover["Source Discovery<br/>standalone model3 / Mver package / image patch"]
+      Validate["Validation and Identity<br/>manifest references / bounded paths / SHA-256 digest / metadata"]
+      Adapt["Runtime Adapter Generation<br/>preview assets / input overlays / projection and binding metadata"]
+      Installed[("Installed Packages<br/>data_root/models / preserved source payload / package descriptor")]
+      Nearby[("Nearby Models<br/>source tree stays authoritative / cache_root/model-adapters")]
+      Catalog["Model and Behavior Catalogs<br/>models / motions / expressions / sounds / effects"]
 
-      Discover --> Validate --> Adapt --> Store --> Catalog
+      Discover --> Validate --> Adapt
+      Adapt --> Installed --> Catalog
+      Adapt --> Nearby --> Catalog
+      BuiltIn --> Catalog
       Catalog --> AppState
     end
 
-    subgraph Presentation["动画、渲染与 UI"]
+    subgraph Presentation["Animation, Composition, and UI"]
       direction LR
       Live2DBridge["C ABI / C++17 Bridge"]
-      Cubism["Live2D Cubism Runtime<br/>model · motion · expression · physics · pose"]
-      Media["媒体服务<br/>images · textures · audio"]
-      Composite["OpenGL 合成管线<br/>background → model → keys / effects / pointer"]
-      Preferences["Nuklear 偏好设置<br/>Catime theme · i18n · model management"]
-      Present["平台呈现<br/>layered window / OpenGL swap"]
+      Cubism["Live2D Cubism Runtime<br/>model / motion / expression / physics / pose / parameter overrides"]
+      Images["Image Pipeline<br/>stb decode and resize / alpha masks and mipmaps / OpenGL texture upload"]
+      Overlay["Input Overlay Runtime<br/>background / pointer / key images / effects"]
+      Audio["Audio Playback<br/>miniaudio engine / asynchronous file decoding"]
+      Composite["OpenGL Frame Composition<br/>clear and background / Live2D model / pointer, keys, and effects"]
+      Preferences["Nuklear Preferences UI<br/>Catime theme / localization / settings / model management"]
+      Present["Platform Presentation<br/>Windows: UpdateLayeredWindow or GL swap<br/>macOS and Linux: SDL_GL_SwapWindow"]
 
-      Live2DBridge --> Cubism --> Composite --> Present
-      Media --> Cubism
-      Media --> Composite
+      Live2DBridge --> Cubism
+      Cubism --> Composite --> Present
+      Images --> Cubism
+      Images --> Overlay --> Composite
       AppState <--> Preferences
     end
 
@@ -130,41 +141,46 @@ flowchart TB
     AppState --> Live2DBridge
     AppState --> Composite
     InputMap --> Live2DBridge
-    InputMap --> Composite
+    InputMap --> Overlay
+    InputMap --> Audio
     Catalog --> Live2DBridge
+    Catalog --> Overlay
+    Catalog --> Audio
     Shell --> Preferences
   end
 
-  subgraph Dependencies["原生依赖"]
+  subgraph Dependencies["Native Dependencies"]
     direction LR
     SDL["SDL3"]
-    OpenGL["OpenGL / GLEW"]
+    OpenGL["OpenGL"]
+    GLEW["GLEW<br/>Cubism OpenGL function loading"]
     CubismSDK["Live2D Cubism SDK"]
     YYJSON["yyjson"]
-    STB["stb"]
+    STB["stb_image / stb_image_resize2 / stb_image_write"]
     Miniaudio["miniaudio"]
     Nuklear["Nuklear"]
   end
 
-  subgraph Toolchain["构建、验证与发布"]
+  subgraph Toolchain["Build, Verification, and Distribution"]
     direction LR
-    CMake["CMake<br/>dependencies · platform · assets"]
-    CTest["CTest<br/>core · i18n · UI · import · Live2D · capture"]
-    Audits["Runtime Audits<br/>smoke · visual · safety · source policy"]
-    Packaging["Distribution<br/>portable · NSIS · MSIX"]
+    CMake["CMake<br/>pinned dependencies / platform sources / asset staging and embedding"]
+    CTest["CTest<br/>core / i18n / UI / app state / model import / motion state / Windows capture"]
+    Audits["Static and Runtime Checks<br/>line policy / platform API allowlist / smoke and visual audits"]
+    Packaging["Distribution<br/>Windows ZIP and NSIS / macOS ZIP / Linux TGZ / Microsoft Store MSIX"]
 
     CMake --> CTest
     CMake --> Audits
     CMake --> Packaging
   end
 
-  User --> NativeHooks
+  User --> GlobalInput
+  User --> Gamepad
   User --> Shell
   ModelSources --> Discover
 
-  Win --> NativeHooks
-  Mac --> NativeHooks
-  Linux --> NativeHooks
+  Win --> GlobalInput
+  Mac --> GlobalInput
+  Linux --> GlobalInput
   Win --> Shell
   Mac --> Shell
   Linux --> Shell
@@ -176,17 +192,27 @@ flowchart TB
   Preferences --> Desktop
 
   SDL -.-> EventLoop
+  SDL -.-> Gamepad
   SDL -.-> Shell
+  SDL -.-> Present
+  OpenGL -.-> Cubism
   OpenGL -.-> Composite
+  OpenGL -.-> Preferences
+  GLEW -.-> Cubism
   CubismSDK -.-> Cubism
   YYJSON -.-> Lifecycle
   YYJSON -.-> Validate
-  STB -.-> Media
-  Miniaudio -.-> Media
+  STB -.-> Images
+  Miniaudio -.-> Audio
   Nuklear -.-> Preferences
 
   CMake -.-> Entry
-  CTest -.-> EventLoop
+  CTest -.-> AppState
+  CTest -.-> Preferences
+  CTest -.-> Live2DBridge
+  CTest -.-> Present
+  Audits -.-> EventLoop
+  Audits -.-> GlobalInput
   Audits -.-> Composite
 
   classDef external fill:#fff4cc,stroke:#b7791f,color:#3d2b00,stroke-width:1.5px
@@ -202,11 +228,11 @@ flowchart TB
   class User,ModelSources,Desktop external
   class Win,Mac,Linux platform
   class Entry,Lifecycle,EventLoop runtime
-  class AppState,InputQueue,Store state
-  class NativeHooks,InputMap,Shell input
-  class Discover,Validate,Adapt,Catalog model
-  class Live2DBridge,Cubism,Media,Composite,Preferences,Present render
-  class SDL,OpenGL,CubismSDK,YYJSON,STB,Miniaudio,Nuklear dependency
+  class AppState,InputQueue,Installed,Nearby state
+  class GlobalInput,Gamepad,InputMap,Shell input
+  class BuiltIn,Discover,Validate,Adapt,Catalog model
+  class Live2DBridge,Cubism,Images,Overlay,Audio,Composite,Preferences,Present render
+  class SDL,OpenGL,GLEW,CubismSDK,YYJSON,STB,Miniaudio,Nuklear dependency
   class CMake,CTest,Audits,Packaging tooling
 
   style Native fill:#fffafd,stroke:#d95f8d,stroke-width:2px
