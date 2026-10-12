@@ -343,6 +343,12 @@
       }
     },
     "overlay": {
+      "window_mode": {
+        "label": "Mode fenêtre"
+      },
+      "window_background_color": {
+        "label": "Couleur d’arrière-plan de la fenêtre"
+      },
       "behavior": {
         "title": "Comportement de la fenêtre"
       },
