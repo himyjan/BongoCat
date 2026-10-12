@@ -4,16 +4,18 @@
 
 ### ✨ Features
 
-- Added Windows window mode under Model window → Window behavior, with a normal title bar and a customizable solid background for OBS window capture and chroma keying. Desktop-pet preferences are restored when window mode is turned off.
-- Model folders can now contain multiple levels of nested folders. A single model imports directly; folders containing multiple models let you select which to import, then choose conversion modes as needed.
-- Added a "Model behavior → Allow overlapping motions" setting, off by default. Different motions can play together with independent timing and fades; newer starts blend over older motions on shared parameters, and motion audio still plays one clip at a time.
-- The Windows installer now asks which language to use and offers Simplified Chinese, Traditional Chinese, English, Arabic, Vietnamese, Brazilian Portuguese, Korean and French. The system language is preselected, with English as the fallback. The choice only changes the installer and uninstaller wizard; the app language is still decided in Settings. A computer that already has BongoCat installed keeps the installer language it stored earlier.
+- Model folders containing multiple levels of nested directories can now be imported.
+- The Windows installer now asks which language to use.
+- Added a "Model behavior → Allow overlapping motions" setting.
+- Added a "Model window → Window behavior → Window mode" setting on Windows.
+- Added a "Model window → Window appearance → Window background color" setting on Windows.
+- Window mode and window background color can be used together, so OBS can capture the model window properly on Windows.
 
 ### 🐛 Bug Fixes
 
-- Fixed the cat window missing from OBS's default window list on macOS by giving it a recognizable title.
-- Fixed Windows model windows losing their proportions when changing scale, resizing, restoring saved geometry or switching models.
-- Fixed imported models that showed "The selected model could not be activated" when switching to them and only enabled after several attempts, even though they render correctly. Switching now succeeds on the first attempt.
+- Fixed the cat window missing from OBS's default window list on macOS.
+- Fixed model windows losing their aspect ratio in some cases.
+- Fixed "The selected model could not be activated" appearing when switching to some models.
 
 ### 🌍 Localization
 
