@@ -7,6 +7,11 @@
 - Fixed "Model window → Window behavior → Hide on mouse hover" hiding the window only sometimes while "Input & interaction → Mouse → Force mouse movement" was on.
 - Fixed the settings window disappearing when disabling the Dock icon on macOS. Settings and update windows keep the Dock icon visible while open; "Always show Dock icon" controls whether it stays visible after those windows close.
 
+### 🎨 Interface
+
+- The About page's product row now shows the version alone instead of appending the build environment.
+- The About page's project and feedback rows no longer carry descriptions.
+
 ## 2.3.0 - 2026-10-12
 
 ### ✨ Features
