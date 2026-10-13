@@ -4,14 +4,14 @@
 
 ### 🐛 Bug Fixes
 
-- Fixed "Model window → Window behavior → Hide on mouse hover" hiding the window only sometimes while "Input & interaction → Mouse → Force mouse movement" was on.
-- Fixed the settings window disappearing when disabling the Dock icon on macOS. Settings and update windows keep the Dock icon visible while open; "Always show Dock icon" controls whether it stays visible after those windows close.
-- Fixed the model window not being able to reach the top of the screen on macOS. The window level is now above the menu bar, so the model can be shown over it.
+- Fixed "Hide on mouse hover" only working in some cases while "Force mouse movement" was on.
+- Fixed the settings window being unexpectedly hidden on macOS after turning off the Dock icon.
+- Fixed the model window not being able to move above the menu bar on macOS.
 
 ### 🎨 Interface
 
-- The About page's product row now shows the version alone instead of appending the build environment.
-- The About page's project and feedback rows no longer carry descriptions.
+- Renamed "Show Dock icon" to "Always show Dock icon".
+- Improved the descriptions on the About page.
 
 ## 2.3.0 - 2026-10-12
 
